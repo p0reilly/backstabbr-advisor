@@ -108,7 +108,7 @@ def main() -> int:
 
     # Lazy imports (allow --help without installed deps)
     try:
-        from backstabbr_scraper import (
+        from backstabbr_advisor import (
             fetch_game_page,
             fetch_game_page_selenium,
             extract_game_state,
@@ -116,12 +116,12 @@ def main() -> int:
             load_game,
             scrape_and_persist,
         )
-        from backstabbr_scraper.exceptions import (
+        from backstabbr_advisor.exceptions import (
             AuthenticationError,
             ParseError,
             CoastAmbiguityError,
         )
-        from backstabbr_scraper.converter import ALL_POWERS
+        from backstabbr_advisor.converter import ALL_POWERS
     except ImportError as e:
         logger.error("Missing dependency: %s\nRun: pip install -r requirements.txt", e)
         return 1
@@ -129,9 +129,9 @@ def main() -> int:
     # --- Press HTML probe (debug) ---
     if args.dump_press_html:
         try:
-            from backstabbr_scraper import fetch_game_page
-            from backstabbr_scraper.press import _press_base, _parse_thread_ids
-            from backstabbr_scraper.exceptions import AuthenticationError, PressUnavailableError
+            from backstabbr_advisor import fetch_game_page
+            from backstabbr_advisor.press import _press_base, _parse_thread_ids
+            from backstabbr_advisor.exceptions import AuthenticationError, PressUnavailableError
         except ImportError as e:
             logger.error("Missing dependency: %s\nRun: pip install -r requirements.txt", e)
             return 1
@@ -196,8 +196,8 @@ def main() -> int:
                 pass
 
         if args.press:
-            from backstabbr_scraper.press import scrape_and_persist_press
-            from backstabbr_scraper.exceptions import PressUnavailableError
+            from backstabbr_advisor.press import scrape_and_persist_press
+            from backstabbr_advisor.exceptions import PressUnavailableError
             try:
                 threads = scrape_and_persist_press(args.game_url, args.cookie)
                 print(f"Press: {len(threads)} thread(s) saved.")

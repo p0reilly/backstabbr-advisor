@@ -5,7 +5,7 @@ Scrapes a backstabbr.com game page and builds a full phase history into a `diplo
 ## Architecture
 
 ```
-backstabbr_scraper/
+backstabbr_advisor/
     exceptions.py     # custom error hierarchy
     province_map.py   # province name → 3-letter code + coast resolution
     scraper.py        # HTTP fetch + parsing → RawGameState (includes raw_orders, units_by_player_raw)

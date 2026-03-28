@@ -63,7 +63,7 @@ def _run_advisory(
     game_id: str, power: str, game_data_dir: str, n_recent: int,
     phase: str | None, include_press: bool = True,
 ) -> None:
-    from backstabbr_scraper.advisor import build_advisory_prompt
+    from backstabbr_advisor.advisor import build_advisory_prompt
 
     try:
         prompt = build_advisory_prompt(
@@ -86,7 +86,7 @@ def _run_validate(
 ) -> None:
     import json as _json
 
-    from backstabbr_scraper.converter import ALL_POWERS, POWER_NAME_MAP
+    from backstabbr_advisor.converter import ALL_POWERS, POWER_NAME_MAP
 
     # Normalize power
     upper = power.strip().upper()
@@ -104,7 +104,7 @@ def _run_validate(
 
     # Load game (reconstructed at the historical phase if given)
     try:
-        from backstabbr_scraper.advisor import _load_game_at_phase
+        from backstabbr_advisor.advisor import _load_game_at_phase
         game = _load_game_at_phase(game_id, game_data_dir, phase=phase)
     except (FileNotFoundError, ValueError, ImportError) as e:
         print(json.dumps({"valid": [], "invalid": [], "errors": [str(e)]}))

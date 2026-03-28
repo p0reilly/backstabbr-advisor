@@ -95,7 +95,7 @@ python searchbot_recommend.py <game_id> <power> --all-powers
 ## Project structure
 
 ```
-backstabbr_scraper/
+backstabbr_advisor/
     scraper.py        # HTTP fetch + HTML parsing → RawGameState
     converter.py      # RawGameState → diplomacy dicts; order conversion
     loader.py         # construct diplomacy.Game from a single state dict
