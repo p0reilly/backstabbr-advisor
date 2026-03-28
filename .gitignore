@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Project-specific data (user game state, scraped content)
+game_data/
+analysis_output/
+press_debug/
+
+# Claude Code (local machine-specific settings)
+.claude/settings.local.json
+
+# IDE
+.idea/workspace.xml
+.vscode/
+
+# macOS
+.DS_Store
+
+# Environment
+.env
+*.pem
+*.key
