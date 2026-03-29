@@ -27,7 +27,7 @@ game_data/            # auto-created; one <game_id>.json per game, one <game_id>
 
 ## How backstabbr serves game state
 
-No API. Game state is embedded as inline JS variables in the HTML (static — no Selenium needed):
+No API. Game state is embedded as inline JS variables in the HTML (static — plain HTTP requests suffice):
 
 ```js
 var stage = "NEEDS_BUILDS";
@@ -92,7 +92,7 @@ Previously-saved phases are not re-validated (assumed clean from their first scr
 
 ## Press scraping (`press.py`)
 
-Press threads are fetched from two XHR endpoints (no Selenium needed):
+Press threads are fetched from two XHR endpoints:
 
 - `GET {game_url}/pressthread` — paginated thread header list; HTML fragment with `<a class="press-thread-header" id="thread_{id}">` elements. Pagination cursor is embedded in a "Load more" button `onclick="load_message_headers('BASE64CURSOR', null)"` — the cursor is passed as a query param `?cursor=BASE64CURSOR` on the next request.
 - `GET {game_url}/pressthread/{thread_id}` — single thread detail; HTML fragment with messages.

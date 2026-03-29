@@ -88,48 +88,6 @@ def fetch_game_page(url: str, session_cookie: str) -> BeautifulSoup:
     return BeautifulSoup(resp.text, "lxml")
 
 
-def fetch_game_page_selenium(url: str, session_cookie: str) -> BeautifulSoup:
-    """Use headless Chrome via Selenium to get JS-rendered DOM."""
-    try:
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        from selenium.webdriver.common.by import By
-    except ImportError:
-        raise ImportError(
-            "selenium is not installed. Run: pip install selenium"
-        )
-
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument(f"user-agent={_BROWSER_UA}")
-
-    driver = webdriver.Chrome(options=options)
-    try:
-        # Set cookie on the domain first
-        driver.get("https://www.backstabbr.com")
-        name, _, value = session_cookie.partition("=")
-        driver.add_cookie({"name": name.strip(), "value": value.strip(), "domain": ".backstabbr.com"})
-        driver.get(url)
-
-        # Wait for SVG or game board to render
-        try:
-            WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "svg, .game-map, #map"))
-            )
-        except Exception:
-            logger.warning("Timed out waiting for game map element; proceeding anyway.")
-
-        html = driver.page_source
-    finally:
-        driver.quit()
-
-    return BeautifulSoup(html, "lxml")
-
-
 # ---------------------------------------------------------------------------
 # Primary: backstabbr inline JS variable extraction
 # ---------------------------------------------------------------------------
@@ -609,7 +567,7 @@ def extract_game_state(soup: BeautifulSoup) -> RawGameState:
         raise ParseError(
             "Could not extract any units or supply centers from the page. "
             "The game board may be rendered by JavaScript. "
-            "Try running with --selenium flag, or use --dump-html to inspect the HTML."
+            "Use --dump-html to inspect the raw HTML."
         )
 
     return state

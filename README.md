@@ -16,11 +16,6 @@ A tool for [backstabbr.com](https://www.backstabbr.com) Diplomacy games that scr
 pip install -r requirements.txt
 ```
 
-Optional (only needed if using `--selenium` for JS-rendered pages):
-```bash
-pip install -r requirements-optional.txt
-```
-
 ## Authentication
 
 backstabbr requires a session cookie (Firebase JWT). To get it:

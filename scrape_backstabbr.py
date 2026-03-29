@@ -6,7 +6,6 @@ Usage:
     python scrape_backstabbr.py <game_url> --cookie "<session_cookie>"
     python scrape_backstabbr.py <url> --cookie "<session>" --dump-html debug.html
     python scrape_backstabbr.py <url> --cookie "<session>" --output game.json
-    python scrape_backstabbr.py <url> --cookie "<session>" --selenium
     python scrape_backstabbr.py <url> --cookie "<session>" --dry-run
 """
 
@@ -48,11 +47,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="Convert state and print dict but do not construct diplomacy.Game",
-    )
-    p.add_argument(
-        "--selenium",
-        action="store_true",
-        help="Use headless Chrome (Selenium) to render JS before parsing",
     )
     p.add_argument(
         "--coast-hints",
@@ -110,7 +104,6 @@ def main() -> int:
     try:
         from backstabbr_advisor import (
             fetch_game_page,
-            fetch_game_page_selenium,
             extract_game_state,
             convert_game_state,
             load_game,
@@ -214,11 +207,7 @@ def main() -> int:
     # --- Step 1: Fetch page ---
     logger.info("Fetching %s", args.game_url)
     try:
-        if args.selenium:
-            logger.info("Using Selenium for JS rendering")
-            soup = fetch_game_page_selenium(args.game_url, args.cookie)
-        else:
-            soup = fetch_game_page(args.game_url, args.cookie)
+        soup = fetch_game_page(args.game_url, args.cookie)
     except AuthenticationError as e:
         logger.error("Authentication failed: %s", e)
         return 1
