@@ -87,6 +87,24 @@ python searchbot_recommend.py <game_id> <power> --phase F1907M
 python searchbot_recommend.py <game_id> <power> --all-powers
 ```
 
+## Claude Code skills
+
+Two slash commands are available when using [Claude Code](https://claude.ai/code):
+
+### `/scrape-backstabbr [url] [cookie]`
+
+Prompts for any missing arguments, runs the scraper, and reports the saved phase. Equivalent to running `scrape_backstabbr.py` manually but with interactive argument collection.
+
+### `/advise-backstabbr [game_id] [power] [phase]`
+
+The main interactive advisory workflow. Given a game ID and power (and an optional historical phase), it:
+
+1. Runs the advisory prompt and reads the full output (board state, SC trajectory, press, per-unit BFS context, recent order history)
+2. Identifies allied powers from the Inferred Relationships section and runs `searchbot_recommend.py` with the appropriate `--ally` flags
+3. Performs deception analysis — cross-references press statements against actual orders, flags communication gaps and over-reassurance
+4. Proposes concrete orders, explaining where it agrees or diverges from the ML model
+5. Validates every proposed order via `advise_backstabbr.py --validate` before presenting the final advice
+
 ## Project structure
 
 ```
