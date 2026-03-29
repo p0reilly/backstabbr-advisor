@@ -32,11 +32,19 @@ Read the output carefully. It contains:
 - Per-unit BFS context and legal orders
 - Recent order history
 
-Next, get the searchbot's ML-recommended orders (append `--phase <phase>` if a
-phase was provided):
+Next, get the searchbot's ML-recommended orders. First, read the **Inferred
+Relationships** section of the advisory output and identify every power listed
+with category **Ally**. Add one `--ally <POWER>` flag per ally. Then run
+(append `--phase <phase>` if a phase was provided):
 ```bash
-python3 searchbot_recommend.py <game_id> <power> [--phase <phase>]
+python3 searchbot_recommend.py <game_id> <power> [--phase <phase>] [--ally POWER ...]
 ```
+Example: if the relationships section shows TURKEY and RUSSIA as "Ally":
+```bash
+python3 searchbot_recommend.py <game_id> <power> --ally TURKEY --ally RUSSIA
+```
+If no powers are categorised as "Ally" (e.g. early game with no movement history),
+omit the `--ally` flags entirely.
 
 If the script exits with an error (model not found), note that searchbot
 recommendations are unavailable and continue with Claude-only analysis.

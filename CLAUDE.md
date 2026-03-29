@@ -161,6 +161,7 @@ python advise_backstabbr.py <game_id> <power> --validate "A PAR - BUR" "F BRE H"
 # ML move recommendations (requires diplomacy_searchbot repo with downloaded models)
 python searchbot_recommend.py <game_id> <power>
 python searchbot_recommend.py <game_id> <power> --phase S1907M
+python searchbot_recommend.py <game_id> <power> --ally TURKEY --ally RUSSIA
 ```
 
 ## Searchbot recommendations (`searchbot_recommend.py`)
@@ -176,6 +177,9 @@ python searchbot_recommend.py <game_id> <power> --phase S1907M
 
 # All powers
 python searchbot_recommend.py <game_id> <power> --all-powers
+
+# Mask moves that attack ally-occupied provinces (repeat for multiple allies)
+python searchbot_recommend.py <game_id> <power> --ally TURKEY --ally RUSSIA
 
 # Override model or searchbot location
 python searchbot_recommend.py <game_id> <power> --model <ckpt> --searchbot-dir <path>

@@ -178,6 +178,46 @@ def _load_state(
 # Inference
 # ---------------------------------------------------------------------------
 
+import re as _re
+
+_DEST_RE = _re.compile(r"- (\w+)")
+
+
+def _order_attacks_ally(order_str: str, ally_provinces: set) -> bool:
+    """True if the order targets an ally-occupied province.
+
+    Covers all offensive order types via the same "- DEST" pattern:
+      - Direct move:       "A PAR - BUR"
+      - Support of move:   "A CON S F BLA - ANK"
+      - Move via convoy:   "A BRE - LON VIA"
+      - Fleet convoy:      "F MID C A BRE - LON"  (fleet + army both masked)
+    Hold, retreat, disband, and build orders have no "- DEST" and are never masked.
+    """
+    m = _DEST_RE.search(order_str)
+    return m is not None and m.group(1) in ally_provinces
+
+
+def _mask_ally_attacks(inputs, power: str, ally_provinces: set) -> None:
+    """Zero out x_possible_actions entries that attack an ally-occupied province."""
+    if not ally_provinces:
+        return
+    from fairdiplomacy.models.consts import POWERS  # type: ignore
+    from fairdiplomacy.utils.order_idxs import ORDER_VOCABULARY, EOS_IDX  # type: ignore
+
+    power_idx = POWERS.index(power)
+    pa = inputs["x_possible_actions"]  # shape [B, 7, S, 469]
+    pa_cpu = pa[0, power_idx].cpu()    # [S, 469]
+    for s in range(pa_cpu.shape[0]):
+        for j in range(pa_cpu.shape[1]):
+            idx = pa_cpu[s, j].item()
+            if idx == EOS_IDX:
+                break  # rest of row is padding
+            if 0 <= idx < len(ORDER_VOCABULARY):
+                if _order_attacks_ally(ORDER_VOCABULARY[idx], ally_provinces):
+                    pa_cpu[s, j] = EOS_IDX
+    pa[0, power_idx] = pa_cpu.to(pa.device)
+
+
 def _run_inference(
     game_json: str,
     powers: list[str],
@@ -185,6 +225,7 @@ def _run_inference(
     searchbot_dir: str,
     temperature: float,
     top_p: float,
+    allies: list[str] | None = None,
 ) -> dict[str, list[str]]:
     sys.path.insert(0, searchbot_dir)
 
@@ -192,6 +233,7 @@ def _run_inference(
         from conf import agents_cfgs  # type: ignore
         from fairdiplomacy.agents.model_sampled_agent import ModelSampledAgent  # type: ignore
         from fairdiplomacy import pydipcc  # type: ignore
+        from fairdiplomacy.models.consts import POWERS as ALL_POWERS_ORDERED  # type: ignore
     except ImportError as e:
         print(f"Error: failed to import diplomacy_searchbot from {searchbot_dir!r}: {e}", file=sys.stderr)
         sys.exit(1)
@@ -208,10 +250,44 @@ def _run_inference(
     )
     agent = ModelSampledAgent(cfg)
 
-    results: dict[str, list[str]] = {}
+    if not allies:
+        results: dict[str, list[str]] = {}
+        for power in powers:
+            results[power] = agent.get_orders(game, power)
+        return results
+
+    # Build set of provinces currently occupied by allied units.
+    ally_provinces: set[str] = set()
+    state = game.get_state()
+    for ally in allies:
+        for unit in state["units"].get(ally, []):
+            # unit strings: "A ANK", "F CON", "* A SMY" (dislodged — skip)
+            parts = unit.split()
+            if parts[0] == "*":
+                continue
+            loc = parts[-1].split("/")[0]  # strip coast suffix e.g. STP/NC -> STP
+            ally_provinces.add(loc)
+
+    if ally_provinces:
+        print(f"Ally filter active — masking attacks on: {sorted(ally_provinces)}", file=sys.stderr)
+
+    # Replicate get_orders_many_powers with masking injected before the forward pass.
+    encode_fn = (
+        agent.input_encoder.encode_inputs_all_powers
+        if agent.model.is_all_powers()
+        else agent.input_encoder.encode_inputs
+    )
+    inputs = encode_fn([game]).to(agent.device)
+
     for power in powers:
-        results[power] = agent.get_orders(game, power)
-    return results
+        if len(game.get_orderable_locations().get(power, [])) > 0:
+            _mask_ally_attacks(inputs, power, ally_provinces)
+
+    actions, _, _ = agent.model.do_model_request(
+        inputs, temperature=agent.temperature, top_p=agent.top_p
+    )
+    actions = actions[0]  # remove batch dim
+    return {p: a for p, a in zip(ALL_POWERS_ORDERED, actions) if p in powers}
 
 
 # ---------------------------------------------------------------------------
@@ -268,6 +344,17 @@ def main() -> None:
         default=1.0,
         help="Top-p (nucleus) sampling (default: 1.0)",
     )
+    parser.add_argument(
+        "--ally",
+        dest="allies",
+        action="append",
+        default=[],
+        metavar="POWER",
+        help=(
+            "Treat POWER as an ally — moves attacking their units are masked before inference. "
+            "May be repeated: --ally TURKEY --ally RUSSIA"
+        ),
+    )
     args = parser.parse_args()
 
     # Resolve model path.
@@ -292,6 +379,13 @@ def main() -> None:
             sys.exit(1)
         powers = [power_upper]
 
+    # Normalise and validate ally list.
+    allies = [a.strip().upper() for a in args.allies]
+    for ally in allies:
+        if ally not in ALL_POWERS:
+            print(f"Error: unknown ally {ally!r}. Must be one of {ALL_POWERS}.", file=sys.stderr)
+            sys.exit(1)
+
     # Load game state.
     short_phase, units, centers, retreats = _load_state(
         args.game_id, args.game_data_dir, args.phase
@@ -303,7 +397,8 @@ def main() -> None:
     # Run inference.
     print(f"Loading model: {model_path}", file=sys.stderr)
     recommendations = _run_inference(
-        game_json, powers, model_path, searchbot_dir, args.temperature, args.top_p
+        game_json, powers, model_path, searchbot_dir, args.temperature, args.top_p,
+        allies=allies,
     )
 
     # Print results.
